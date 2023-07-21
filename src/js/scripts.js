@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
+import * as dat from "dat.gui";
 const renderer = new THREE.WebGLRenderer();
 
 renderer.setSize(window.innerWidth, window.innerHeight);
@@ -43,6 +44,35 @@ plane.rotation.x = -0.5 * Math.PI; //we also want the plane to rotate
 //adding a helper
 const gridHelper = new THREE.GridHelper(30); //30 is the width or height
 scene.add(gridHelper);
+
+//moving forward to making a sphere
+const sphereGeometry = new THREE.SphereGeometry(4, 50, 50);
+const sphereMaterial = new THREE.MeshBasicMaterial({
+  //There are other mesh materials too'
+  //MeshStandardMaterial(These needs light to show up.)
+  //MeshLambertMaterial
+
+  color: 0x0000ff,
+  wireframe: true, //the shape of the sphere will not look good until and unless we set the wireframe to true
+});
+const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
+scene.add(sphere);
+//position of the sphere
+sphere.position.set(-10, 10, 0);
+
+/*okay so its difficult to set the position but they
+have built a library which we install using npm install dat.gui*/
+
+const gui = new dat.GUI();
+
+const options = {
+  sphereColor: "#ffea00", //we are setting color but to chamge it as we want.
+};
+//to add the colorpalatte we have to set options as first argument and key of the element as second argument
+//next is the onchange method in call back function in which we specify what has to be done every time we change the colour in the interface
+gui.addColor(options, "sphereColor").onChange(function (e) {
+  sphere.material.color.set(e); //color.set changes the colour of the sphere and variable e contains the colour code.
+});
 
 //we perform 5 radiation rotation on the box
 //box.rotation.x=5;
