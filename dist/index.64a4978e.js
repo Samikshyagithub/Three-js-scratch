@@ -625,7 +625,9 @@ sphere.position.set(-10, 10, 0);
 /*okay so its difficult to set the position but they
 have built a library which we install using npm install dat.gui*/ const gui = new _datGui.GUI();
 const options = {
-    sphereColor: "#ffea00"
+    sphereColor: "#ffea00",
+    wireframe: false,
+    speed: 0.01
 };
 //to add the colorpalette we have to set options as first argument and key of the element as second argument
 //next is the onchange method in call back function in which we specify what has to be done every time we change the colour in the interface
@@ -633,10 +635,12 @@ gui.addColor(options, "sphereColor").onChange(function(e) {
     sphere.material.color.set(e); //color.set changes the colour of the sphere and variable e contains the colour code.
 });
 //there are other options too such as setting a colour palettee
-/*gui.add(options, "wireframe").onChange(function (e) {
-  sphere.material.wireframe = e; //okay this changes the colour of the sphere only when the check box is checked.
-});*/ let step = 0; //sphere bouncing
-let speed = 0.01; //whatever we want to animate it should be inside the animation
+gui.add(options, "wireframe").onChange(function(e) {
+    sphere.material.wireframe = e; //okay this changes the colour of the sphere only when the check box is checked.
+});
+gui.add(options, "speed", 0, 0.1); //the min speed is 0 and max is 0.1 now we can control it whenever we want.
+let step = 0; //sphere bouncing
+//whatever we want to animate it should be inside the animation
 //we perform 5 radiation rotation on the box
 //box.rotation.x=5;
 //box.rotation.y=5;
@@ -644,7 +648,7 @@ let speed = 0.01; //whatever we want to animate it should be inside the animatio
 function animate(time) {
     box.rotation.x = time / 1000; //0.01 can be written but to make the code reusable and so that we can update time according to our will. ;
     box.rotation.y = time / 1000; //0.01 ;
-    step += speed; //animation for bouncing the sphere
+    step += options.speed; //animation for bouncing the sphere
     sphere.position.y = 10 * Math.abs(Math.sin(step));
     renderer.render(scene, camera);
 }
