@@ -611,7 +611,7 @@ const gridHelper = new _three.GridHelper(30); //30 is the width or height
 scene.add(gridHelper);
 //moving forward to making a sphere
 const sphereGeometry = new _three.SphereGeometry(4, 50, 50);
-const sphereMaterial = new _three.MeshBasicMaterial({
+const sphereMaterial = new _three.MeshStandardMaterial({
     //There are other mesh materials too'
     //MeshStandardMaterial(These needs light to show up.)
     //MeshLambertMaterial
@@ -622,6 +622,11 @@ const sphere = new _three.Mesh(sphereGeometry, sphereMaterial);
 scene.add(sphere);
 //position of the sphere
 sphere.position.set(-10, 10, 0);
+//now we work to provide light
+const ambientLight = new _three.AmbientLight(0x333333);
+scene.add(ambientLight); //nothing happens becauseMeshBasicMaterial does not support light so change it to standard.
+const directionalLight = new _three.DirectionalLight(0xffff, 0.8);
+scene.add(directionalLight); //this is important for shading of the object
 /*okay so its difficult to set the position but they
 have built a library which we install using npm install dat.gui*/ const gui = new _datGui.GUI();
 const options = {
