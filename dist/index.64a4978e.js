@@ -574,11 +574,19 @@ function hmrAccept(bundle /*: ParcelRequire */ , id /*: string */ ) {
 }
 
 },{}],"goJYj":[function(require,module,exports) {
+var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 var _three = require("three");
 var _orbitControlsJs = require("three/examples/jsm/controls/OrbitControls.js");
 var _datGui = require("dat.gui");
+var _image1Jpg = require("../image1.jpg");
+var _image1JpgDefault = parcelHelpers.interopDefault(_image1Jpg);
+var _image2Jpg = require("../image2.jpg");
+var _image2JpgDefault = parcelHelpers.interopDefault(_image2Jpg);
+var _image5Jpg = require("../image5.jpg");
+var _image5JpgDefault = parcelHelpers.interopDefault(_image5Jpg);
 const renderer = new _three.WebGLRenderer();
 renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.shadowMap.enabled = true; //it is not automatically enabled so we have to render it to make it true to work with shadows.
 document.body.appendChild(renderer.domElement);
 const scene = new _three.Scene(); //to create a scene to the viewer
 const camera = new _three.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
@@ -599,13 +607,14 @@ const box = new _three.Mesh(boxGeometry, boxMaterial); //fusion of geometry and 
 scene.add(box);
 //creating a plane with const passing width and height as parameters
 const planeGeometry = new _three.PlaneGeometry(30, 30); //this is a geometry
-const planeMaterial = new _three.MeshBasicMaterial({
+const planeMaterial = new _three.MeshStandardMaterial({
     color: 0xffffff,
     side: _three.DoubleSide
 }); //this the cover as in mesh as in shape
 const plane = new _three.Mesh(planeGeometry, planeMaterial); //this is part where we cover our geometry with material
 scene.add(plane); //The plane should be displayed in the scene .
 plane.rotation.x = -0.5 * Math.PI; //we also want the plane to rotate
+plane.receiveShadow = true;
 //adding a helper
 const gridHelper = new _three.GridHelper(30); //30 is the width or height
 scene.add(gridHelper);
@@ -622,17 +631,82 @@ const sphere = new _three.Mesh(sphereGeometry, sphereMaterial);
 scene.add(sphere);
 //position of the sphere
 sphere.position.set(-10, 10, 0);
+sphere.castShadow = true;
 //now we work to provide light
 const ambientLight = new _three.AmbientLight(0x333333);
 scene.add(ambientLight); //nothing happens becauseMeshBasicMaterial does not support light so change it to standard.
-const directionalLight = new _three.DirectionalLight(0xffff, 0.8);
+/*const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
 scene.add(directionalLight); //this is important for shading of the object
-/*okay so its difficult to set the position but they
-have built a library which we install using npm install dat.gui*/ const gui = new _datGui.GUI();
+directionalLight.position.set(-30, 50, 0);
+directionalLight.castShadow = true;
+directionalLight.shadow.camera.bottom = -12; //to cast shadow of the whole sphere we shifted the camera to buttom
+
+const dLightHelper = new THREE.DirectionalLightHelper(directionalLight, 5);
+scene.add(dLightHelper);
+
+const dLightShadowHelper = new THREE.CameraHelper(
+  directionalLight.shadow.camera
+);
+scene.add(dLightShadowHelper); //the space formed by these is the only place where shadow can be formed through camera.*/ /*okay so its difficult to set the position but they
+have built a library which we install using npm install dat.gui*/ const spotLight = new _three.SpotLight(0xffffff);
+spotLight.castShadow = true;
+scene.add(spotLight);
+spotLight.position.set(-100, 100, 0);
+spotLight.angle = 0.2;
+const sLightHelper = new _three.SpotLightHelper(spotLight);
+scene.add(sLightHelper);
+//scene.fog = new THREE.FogExp2(0xffffff, 0.01); //disappears like fog when zoomed out
+//renderer.setClearColor(0xff00ff); //to set the colour of the background or scene
+//to set an image in the background
+//first create an instance of the texture loader class and we need to call the load method
+//on that instance and set the path name of the image as an argument and that will create a texture object
+const textureLoader = new _three.TextureLoader();
+scene.background = textureLoader.load((0, _image2JpgDefault.default));
+//actually it is a cube containing each side the image we want
+/*const cubeTextureLoader = new THREE.CubeTextureLoader();
+scene.background = cubeTextureLoader.load([
+  image1,
+  image1,
+  image2,
+  image2,
+  image2,
+  image2,
+]);*/ const box2Geometry = new _three.BoxGeometry(4, 4, 4);
+const box2Material = new _three.MeshBasicMaterial({
+});
+//what if we want different material and texture on different side of the cubes
+const box2MultiMaterial = [
+    new _three.MeshBasicMaterial({
+        map: textureLoader.load((0, _image1JpgDefault.default))
+    }),
+    new _three.MeshBasicMaterial({
+        map: textureLoader.load((0, _image2JpgDefault.default))
+    }),
+    new _three.MeshBasicMaterial({
+        map: textureLoader.load((0, _image1JpgDefault.default))
+    }),
+    new _three.MeshBasicMaterial({
+        map: textureLoader.load((0, _image2JpgDefault.default))
+    }),
+    new _three.MeshBasicMaterial({
+        map: textureLoader.load((0, _image1JpgDefault.default))
+    }),
+    new _three.MeshBasicMaterial({
+        map: textureLoader.load((0, _image2JpgDefault.default))
+    })
+];
+const box2 = new _three.Mesh(box2Geometry, box2MultiMaterial);
+scene.add(box2);
+box2.position.set(0, 15, 10);
+//box2.material.map = textureLoader.load(image1);
+const gui = new _datGui.GUI();
 const options = {
     sphereColor: "#ffea00",
     wireframe: false,
-    speed: 0.01
+    speed: 0.01,
+    angle: 0.2,
+    penumbra: 0,
+    intensity: 1
 };
 //to add the colorpalette we have to set options as first argument and key of the element as second argument
 //next is the onchange method in call back function in which we specify what has to be done every time we change the colour in the interface
@@ -643,7 +717,10 @@ gui.addColor(options, "sphereColor").onChange(function(e) {
 gui.add(options, "wireframe").onChange(function(e) {
     sphere.material.wireframe = e; //okay this changes the colour of the sphere only when the check box is checked.
 });
-gui.add(options, "speed", 0, 0.1); //the min speed is 0 and max is 0.1 now we can control it whenever we want.
+gui.add(options, "speed", 0, 0.1);
+gui.add(options, "angle", 0, 1); //the min speed is 0 and max is 0.1 now we can control it whenever we want.
+gui.add(options, "penumbra", 0, 1);
+gui.add(options, "intensity", 0, 1);
 let step = 0; //sphere bouncing
 //whatever we want to animate it should be inside the animation
 //we perform 5 radiation rotation on the box
@@ -655,6 +732,10 @@ function animate(time) {
     box.rotation.y = time / 1000; //0.01 ;
     step += options.speed; //animation for bouncing the sphere
     sphere.position.y = 10 * Math.abs(Math.sin(step));
+    spotLight.angle = options.angle;
+    spotLight.penumbra = options.penumbra;
+    spotLight.intensity = options.intensity;
+    sLightHelper.update(); //everytime we change the values we have to update the helper
     renderer.render(scene, camera);
 }
 //if we want to control the time then we have to pass it as an argument.
@@ -662,8 +743,14 @@ function animate(time) {
 renderer.setAnimationLoop(animate);
 camera.position.z = 5;
 renderer.render(scene, camera); //render method from the rendere to pass the arguments i.e scene and camera
+ //key notes
+ //webgl the value of the axis starts from neg 1 to positive 1
+ //values the top right corner coordinates are 19 20 and 0 the normalized values
+ //are 1 on the x axis and y on the y axis
+ //also original(480,0)
+ //Normalized:(-0.5,0)
 
-},{"three":"ktPTu","three/examples/jsm/controls/OrbitControls.js":"7mqRv","dat.gui":"k3xQk"}],"ktPTu":[function(require,module,exports) {
+},{"three":"ktPTu","three/examples/jsm/controls/OrbitControls.js":"7mqRv","dat.gui":"k3xQk","../image1.jpg":"93SHx","../image2.jpg":"ij8TQ","@parcel/transformer-js/src/esmodule-helpers.js":"7yyeJ","../image5.jpg":"bZCOv"}],"ktPTu":[function(require,module,exports) {
 /**
  * @license
  * Copyright 2010-2023 Three.js Authors
@@ -33583,6 +33670,50 @@ var index = {
 };
 exports.default = index;
 
-},{"@parcel/transformer-js/src/esmodule-helpers.js":"7yyeJ"}]},["cft4i","goJYj"], "goJYj", "parcelRequirea84e")
+},{"@parcel/transformer-js/src/esmodule-helpers.js":"7yyeJ"}],"93SHx":[function(require,module,exports) {
+module.exports = require("3dbb8463d780241c").getBundleURL("e6MYJ") + "image1.c5f20fc3.jpg" + "?" + Date.now();
+
+},{"3dbb8463d780241c":"aXr6n"}],"aXr6n":[function(require,module,exports) {
+"use strict";
+var bundleURL = {};
+function getBundleURLCached(id) {
+    var value = bundleURL[id];
+    if (!value) {
+        value = getBundleURL();
+        bundleURL[id] = value;
+    }
+    return value;
+}
+function getBundleURL() {
+    try {
+        throw new Error();
+    } catch (err) {
+        var matches = ("" + err.stack).match(/(https?|file|ftp|(chrome|moz|safari-web)-extension):\/\/[^)\n]+/g);
+        if (matches) // The first two stack frames will be this function and getBundleURLCached.
+        // Use the 3rd one, which will be a runtime in the original bundle.
+        return getBaseURL(matches[2]);
+    }
+    return "/";
+}
+function getBaseURL(url) {
+    return ("" + url).replace(/^((?:https?|file|ftp|(chrome|moz|safari-web)-extension):\/\/.+)\/[^/]+$/, "$1") + "/";
+}
+// TODO: Replace uses with `new URL(url).origin` when ie11 is no longer supported.
+function getOrigin(url) {
+    var matches = ("" + url).match(/(https?|file|ftp|(chrome|moz|safari-web)-extension):\/\/[^/]+/);
+    if (!matches) throw new Error("Origin not found");
+    return matches[0];
+}
+exports.getBundleURL = getBundleURLCached;
+exports.getBaseURL = getBaseURL;
+exports.getOrigin = getOrigin;
+
+},{}],"ij8TQ":[function(require,module,exports) {
+module.exports = require("68686e31cfc232e7").getBundleURL("e6MYJ") + "image2.9d9c7b20.jpg" + "?" + Date.now();
+
+},{"68686e31cfc232e7":"aXr6n"}],"bZCOv":[function(require,module,exports) {
+module.exports = require("8492a38f26b0541c").getBundleURL("e6MYJ") + "image5.c4f35a91.jpg" + "?" + Date.now();
+
+},{"8492a38f26b0541c":"aXr6n"}]},["cft4i","goJYj"], "goJYj", "parcelRequirea84e")
 
 //# sourceMappingURL=index.64a4978e.js.map

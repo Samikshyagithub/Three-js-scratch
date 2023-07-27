@@ -1,9 +1,15 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import * as dat from "dat.gui";
+
+import image1 from "../image1.jpg";
+import image2 from "../image2.jpg";
+import image5 from "../image5.jpg";
+
 const renderer = new THREE.WebGLRenderer();
 
 renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.shadowMap.enabled = true; //it is not automatically enabled so we have to render it to make it true to work with shadows.
 
 document.body.appendChild(renderer.domElement);
 
@@ -33,14 +39,14 @@ scene.add(box);
 
 //creating a plane with const passing width and height as parameters
 const planeGeometry = new THREE.PlaneGeometry(30, 30); //this is a geometry
-const planeMaterial = new THREE.MeshBasicMaterial({
+const planeMaterial = new THREE.MeshStandardMaterial({
   color: 0xffffff,
   side: THREE.DoubleSide, //since the plane gets diappeared from lower we need to first make it doubleside
 }); //this the cover as in mesh as in shape
 const plane = new THREE.Mesh(planeGeometry, planeMaterial); //this is part where we cover our geometry with material
 scene.add(plane); //The plane should be displayed in the scene .
 plane.rotation.x = -0.5 * Math.PI; //we also want the plane to rotate
-
+plane.receiveShadow = true;
 //adding a helper
 const gridHelper = new THREE.GridHelper(30); //30 is the width or height
 scene.add(gridHelper);
@@ -59,23 +65,86 @@ const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
 scene.add(sphere);
 //position of the sphere
 sphere.position.set(-10, 10, 0);
+sphere.castShadow = true;
 
 //now we work to provide light
 const ambientLight = new THREE.AmbientLight(0x333333);
 scene.add(ambientLight); //nothing happens becauseMeshBasicMaterial does not support light so change it to standard.
 
-const directionalLight = new THREE.DirectionalLight(0xffff, 0.8);
+/*const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
 scene.add(directionalLight); //this is important for shading of the object
+directionalLight.position.set(-30, 50, 0);
+directionalLight.castShadow = true;
+directionalLight.shadow.camera.bottom = -12; //to cast shadow of the whole sphere we shifted the camera to buttom
+
+const dLightHelper = new THREE.DirectionalLightHelper(directionalLight, 5);
+scene.add(dLightHelper);
+
+const dLightShadowHelper = new THREE.CameraHelper(
+  directionalLight.shadow.camera
+);
+scene.add(dLightShadowHelper); //the space formed by these is the only place where shadow can be formed through camera.*/
 
 /*okay so its difficult to set the position but they
 have built a library which we install using npm install dat.gui*/
+
+const spotLight = new THREE.SpotLight(0xffffff);
+spotLight.castShadow = true;
+scene.add(spotLight);
+spotLight.position.set(-100, 100, 0);
+spotLight.angle = 0.2;
+
+const sLightHelper = new THREE.SpotLightHelper(spotLight);
+scene.add(sLightHelper);
+
+//scene.fog = new THREE.FogExp2(0xffffff, 0.01); //disappears like fog when zoomed out
+
+//renderer.setClearColor(0xff00ff); //to set the colour of the background or scene
+
+//to set an image in the background
+//first create an instance of the texture loader class and we need to call the load method
+//on that instance and set the path name of the image as an argument and that will create a texture object
+const textureLoader = new THREE.TextureLoader();
+scene.background = textureLoader.load(image2);
+//actually it is a cube containing each side the image we want
+/*const cubeTextureLoader = new THREE.CubeTextureLoader();
+scene.background = cubeTextureLoader.load([
+  image1,
+  image1,
+  image2,
+  image2,
+  image2,
+  image2,
+]);*/
+
+const box2Geometry = new THREE.BoxGeometry(4, 4, 4);
+const box2Material = new THREE.MeshBasicMaterial({
+  //map: textureLoader.load(image1),
+});
+//what if we want different material and texture on different side of the cubes
+
+const box2MultiMaterial = [
+  new THREE.MeshBasicMaterial({ map: textureLoader.load(image1) }),
+  new THREE.MeshBasicMaterial({ map: textureLoader.load(image2) }),
+  new THREE.MeshBasicMaterial({ map: textureLoader.load(image1) }),
+  new THREE.MeshBasicMaterial({ map: textureLoader.load(image2) }),
+  new THREE.MeshBasicMaterial({ map: textureLoader.load(image1) }),
+  new THREE.MeshBasicMaterial({ map: textureLoader.load(image2) }),
+];
+const box2 = new THREE.Mesh(box2Geometry, box2MultiMaterial);
+scene.add(box2);
+box2.position.set(0, 15, 10);
+//box2.material.map = textureLoader.load(image1);
 
 const gui = new dat.GUI();
 
 const options = {
   sphereColor: "#ffea00", //we are setting color but to change it as we want.
   wireframe: false,
-  speed: 0.01, //you just need to define all your options you are using for gui.
+  speed: 0.01,
+  angle: 0.2,
+  penumbra: 0,
+  intensity: 1, //you just need to define all your options you are using for gui.
 };
 //to add the colorpalette we have to set options as first argument and key of the element as second argument
 //next is the onchange method in call back function in which we specify what has to be done every time we change the colour in the interface
@@ -87,8 +156,11 @@ gui.addColor(options, "sphereColor").onChange(function (e) {
 gui.add(options, "wireframe").onChange(function (e) {
   sphere.material.wireframe = e; //okay this changes the colour of the sphere only when the check box is checked.
 });
+gui.add(options, "speed", 0, 0.1);
+gui.add(options, "angle", 0, 1); //the min speed is 0 and max is 0.1 now we can control it whenever we want.
+gui.add(options, "penumbra", 0, 1);
+gui.add(options, "intensity", 0, 1);
 
-gui.add(options, "speed", 0, 0.1); //the min speed is 0 and max is 0.1 now we can control it whenever we want.
 let step = 0; //sphere bouncing
 //whatever we want to animate it should be inside the animation
 
@@ -103,6 +175,11 @@ function animate(time) {
   step += options.speed; //animation for bouncing the sphere
   sphere.position.y = 10 * Math.abs(Math.sin(step));
 
+  spotLight.angle = options.angle;
+  spotLight.penumbra = options.penumbra;
+  spotLight.intensity = options.intensity;
+  sLightHelper.update(); //everytime we change the values we have to update the helper
+
   renderer.render(scene, camera);
 }
 //if we want to control the time then we have to pass it as an argument.
@@ -111,3 +188,10 @@ renderer.setAnimationLoop(animate);
 
 camera.position.z = 5;
 renderer.render(scene, camera); //render method from the rendere to pass the arguments i.e scene and camera
+
+//key notes
+//webgl the value of the axis starts from neg 1 to positive 1
+//values the top right corner coordinates are 19 20 and 0 the normalized values
+//are 1 on the x axis and y on the y axis
+//also original(480,0)
+//Normalized:(-0.5,0)
